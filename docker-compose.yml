@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+
+  postgres:
+
+    image: postgres:15-alpine
+
+    container_name: urbanflow-postgres
+
+    environment:
+
+      POSTGRES_DB: urbanflow_db
+
+      POSTGRES_USER: urbanflow_user
+
+      POSTGRES_PASSWORD: urbanflow_pass
+
+    ports:
+
+      - "5432:5432"
+
+    volumes:
+
+      - postgres_data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+    networks:
+
+      - urbanflow-network
+
+
+  redis:
+
+    image: redis:7-alpine
+
+    container_name: urbanflow-redis
+
+    ports:
+
+      - "6379:6379"
+
+    restart: unless-stopped
+
+    networks:
+
+      - urbanflow-network
+
+
+  backend:
+
+    build:
+
+      context: ./backend
+
+      dockerfile: Dockerfile
+
+    container_name: urbanflow-backend
+
+    ports:
+
+      - "8000:8000"
+
+    environment:
+
+      DATABASE_URL: postgresql://urbanflow_user:urbanflow_pass@postgres:5432/urbanflow_db
+
+      REDIS_URL: redis://redis:6379
+
+      PYTHONUNBUFFERED: 1
+
+    volumes:
+
+      - ./backend/app:/app/app
+
+    depends_on:
+
+      - postgres
+
+      - redis
+
+    restart: unless-stopped
+
+    networks:
+
+      - urbanflow-network
+
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+
+  frontend:
+
+    build:
+
+      context: ./frontend
+
+      dockerfile: Dockerfile
+
+    container_name: urbanflow-frontend
+
+    ports:
+
+      - "5173:5173"
+
+    environment:
+
+      VITE_API_URL: http://localhost:8000
+
+      VITE_WS_URL: ws://localhost:8000
+
+    volumes:
+
+      - ./frontend:/app
+
+      - /app/node_modules
+
+    depends_on:
+
+      - backend
+
+    restart: unless-stopped
+
+    networks:
+
+      - urbanflow-network
+
+    command: npm run dev -- --host
+
+
+networks:
+
+  urbanflow-network:
+
+    driver: bridge
+
+
+volumes:
+
+  postgres_data:
