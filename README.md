@@ -1,10 +1,14 @@
-# UrbanFlowAI 🚦
+# UrbanFlowAI AASAV 🚦
 
 ### AI-Powered Intelligent Traffic Management System for Smart Cities
 
 UrbanFlowAI is an advanced AI-driven traffic optimization platform designed to modernize urban traffic management using **Artificial Intelligence, Machine Learning, Computer Vision, and Real-Time Analytics**.
 
+<<<<<<< Updated upstream
 The project aims to solve major traffic challenges faced by rapidly growing cities by replacing traditional static traffic systems with an adaptive, intelligent, and scalable smart traffic ecosystem.
+=======
+---
+>>>>>>> Stashed changes
 
 ## 🌍 Problem We Solve
 
