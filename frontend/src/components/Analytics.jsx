@@ -1,378 +1,151 @@
 import React, { useState, useEffect } from "react";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  RadialLinearScale,
-  ArcElement,
-  Tooltip,
-  Legend,
-  Filler,
-} from "chart.js";
-
-import { Line, Bar, Radar } from "react-chartjs-2";
-
+import { LineChart, Line, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import "./Analytics.css";
+import { analyticsAPI } from "../services/api";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  RadialLinearScale,
-  ArcElement,
-  Tooltip,
-  Legend,
-  Filler
-);
+const tooltip = {
+  contentStyle: { background: "rgba(5,12,30,0.97)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: "10px", color: "#f0f6ff", fontSize: "13px" },
+};
+
+const trendData = [
+  { hour: "6 AM", density: 35, avgSpeed: 45 }, { hour: "9 AM", density: 72, avgSpeed: 32 },
+  { hour: "12 PM", density: 58, avgSpeed: 38 }, { hour: "3 PM", density: 65, avgSpeed: 35 },
+  { hour: "6 PM", density: 85, avgSpeed: 28 }, { hour: "9 PM", density: 45, avgSpeed: 42 },
+];
+
+const speedData = [
+  { zone: "Central", speed: 25 }, { zone: "North", speed: 38 },
+  { zone: "South", speed: 32 }, { zone: "East", speed: 42 }, { zone: "West", speed: 36 },
+];
 
 const Analytics = () => {
   const [timeframe, setTimeframe] = useState("today");
-  const [statistics, setStatistics] = useState(null);
-  const [predictions, setPredictions] = useState(null);
-  const [loadingPredictions, setLoadingPredictions] = useState(false);
+  const [predictions, setPredictions] = useState([]);
+  const [loadingPred, setLoadingPred] = useState(false);
 
   useEffect(() => {
-    fetchStatistics();
-  }, [timeframe]);
-
-  const fetchStatistics = async () => {
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/analytics/statistics?timeframe=${timeframe}`
-      );
-
-      const data = await response.json();
-
-      if (data?.status === "success") {
-        setStatistics(data.data);
-      }
-    } catch (error) {
-      console.error("Statistics fetch error:", error);
-    }
-  };
+    fetchPredictions(1);
+  }, []);
 
   const fetchPredictions = async (hours) => {
-    setLoadingPredictions(true);
-
+    setLoadingPred(true);
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/analytics/congestion-prediction?hours_ahead=${hours}`
-      );
-
-      const data = await response.json();
-
-      if (data?.status === "success") {
-        setPredictions(data.predictions);
-      }
-    } catch (error) {
-      console.error("Prediction fetch error:", error);
-    } finally {
-      setLoadingPredictions(false);
-    }
+      const r = await analyticsAPI.getPredictions();
+      if (r.prediction) setPredictions(r.prediction);
+    } catch {} finally { setLoadingPred(false); }
   };
 
-  const hourlyTrafficData = {
-    labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+  const metrics = [
+    { label: "Avg Traffic Density", value: "62%", color: "#3b82f6" },
+    { label: "Avg Vehicle Speed", value: "34.6 km/h", color: "#10b981" },
+    { label: "Peak Hour", value: "6:00 PM", color: "#f59e0b" },
+    { label: "Optimization Efficiency", value: "87%", color: "#8b5cf6" },
+  ];
 
-    datasets: [
-      {
-        label: "Traffic Density (%)",
-
-        data: [
-          28, 35, 42, 48, 55, 68, 82, 88,
-          85, 78, 72, 75, 78, 82, 85, 88,
-          92, 95, 90, 82, 70, 58, 45, 32,
-        ],
-
-        fill: true,
-        backgroundColor: "rgba(59,130,246,0.15)",
-        borderColor: "rgb(59,130,246)",
-        tension: 0.4,
-      },
-    ],
-  };
-
-  const zoneComparisonData = {
-    labels: ["Central", "North", "South", "East", "West"],
-
-    datasets: [
-      {
-        label: "Avg Congestion",
-        data: [85, 72, 68, 78, 65],
-        backgroundColor: "rgba(239,68,68,0.7)",
-      },
-
-      {
-        label: "Peak Congestion",
-        data: [95, 88, 82, 92, 78],
-        backgroundColor: "rgba(251,146,60,0.7)",
-      },
-    ],
-  };
-
-  const performanceMetrics = {
-    labels: [
-      "Signal Efficiency",
-      "Response Time",
-      "Throughput",
-      "Queue Length",
-      "Wait Time Reduction",
-    ],
-
-    datasets: [
-      {
-        label: "Current Performance",
-
-        data: [85, 78, 82, 70, 88],
-
-        backgroundColor: "rgba(34,197,94,0.2)",
-        borderColor: "rgb(34,197,94)",
-        pointBackgroundColor: "rgb(34,197,94)",
-      },
-
-      {
-        label: "Target Performance",
-
-        data: [90, 85, 90, 80, 95],
-
-        backgroundColor: "rgba(59,130,246,0.2)",
-        borderColor: "rgb(59,130,246)",
-        pointBackgroundColor: "rgb(59,130,246)",
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-
-    maintainAspectRatio: false,
-
-    plugins: {
-      legend: {
-        display: true,
-        position: "top",
-      },
-    },
-  };
+  const insights = [
+    { icon: "🚦", title: "Signal Optimization Active", desc: "AI reduced average waiting time by 18%.", color: "#3b82f6" },
+    { icon: "⚠️", title: "Peak Hour Alert", desc: "Heavy traffic expected near Railway Junction.", color: "#f59e0b" },
+    { icon: "🚑", title: "Emergency Route Efficiency", desc: "Emergency corridor response improved significantly.", color: "#10b981" },
+  ];
 
   return (
-    <div className="analytics">
-
-      <div className="analytics-header">
-
-        <h2>📊 Traffic Analytics & AI Predictions</h2>
-
-        <div className="timeframe-selector">
-
-          <button
-            className={timeframe === "today" ? "active" : ""}
-            onClick={() => setTimeframe("today")}
-          >
-            Today
-          </button>
-
-          <button
-            className={timeframe === "week" ? "active" : ""}
-            onClick={() => setTimeframe("week")}
-          >
-            This Week
-          </button>
-
-          <button
-            className={timeframe === "month" ? "active" : ""}
-            onClick={() => setTimeframe("month")}
-          >
-            This Month
-          </button>
-
+    <div className="analytics-page">
+      <div className="an-header">
+        <div>
+          <h1 className="page-title">Analytics</h1>
+          <p className="page-sub">Traffic patterns, predictions & AI insights</p>
         </div>
-
+        <div className="timeframe-tabs">
+          {["today", "week", "month"].map((t) => (
+            <button key={t} className={`tf-tab ${timeframe === t ? "active" : ""}`} onClick={() => setTimeframe(t)}>
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {statistics && (
-        <div className="key-statistics">
-
-          <div className="stat-box">
-            <h3>
-              {statistics.total_vehicles_processed?.toLocaleString() || 0}
-            </h3>
-            <p>Total Vehicles</p>
-          </div>
-
-          <div className="stat-box">
-            <h3>
-              {statistics.average_density?.toFixed(1) || 0}%
-            </h3>
-            <p>Average Density</p>
-          </div>
-
-          <div className="stat-box">
-            <h3>
-              {statistics.peak_congestion?.toFixed(1) || 0}%
-            </h3>
-            <p>Peak Congestion</p>
-          </div>
-
-          <div className="stat-box">
-            <h3>
-              {statistics.total_incidents || 0}
-            </h3>
-            <p>Total Incidents</p>
-          </div>
-
-        </div>
-      )}
-
-      <div className="charts-grid">
-
-        <div className="chart-card large">
-          <h3>24-Hour Traffic Pattern</h3>
-
-          <div className="chart-container">
-            <Line
-              data={hourlyTrafficData}
-              options={chartOptions}
-            />
-          </div>
+      <div className="an-charts-grid">
+        <div className="an-card wide">
+          <div className="an-card-head"><h3>Traffic Trend</h3><span className="an-tag">Hourly</span></div>
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.08)" />
+              <XAxis dataKey="hour" stroke="#475569" tick={{ fontSize: 12 }} />
+              <YAxis stroke="#475569" tick={{ fontSize: 12 }} />
+              <Tooltip {...tooltip} />
+              <Legend wrapperStyle={{ fontSize: "13px", color: "#94a3b8" }} />
+              <Line type="monotone" dataKey="density" stroke="#3B82F6" strokeWidth={2.5} dot={{ r: 3 }} name="Density %" />
+              <Line type="monotone" dataKey="avgSpeed" stroke="#10B981" strokeWidth={2.5} dot={{ r: 3 }} name="Avg Speed" />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
-        <div className="chart-card">
-          <h3>Zone-wise Comparison</h3>
-
-          <div className="chart-container">
-            <Bar
-              data={zoneComparisonData}
-              options={chartOptions}
-            />
-          </div>
+        <div className="an-card">
+          <div className="an-card-head"><h3>Speed by Zone</h3><span className="an-tag">km/h</span></div>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={speedData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.08)" />
+              <XAxis dataKey="zone" stroke="#475569" tick={{ fontSize: 12 }} />
+              <YAxis stroke="#475569" tick={{ fontSize: 12 }} />
+              <Tooltip {...tooltip} />
+              <Bar dataKey="speed" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        <div className="chart-card">
-          <h3>System Performance</h3>
-
-          <div className="chart-container">
-            <Radar
-              data={performanceMetrics}
-              options={{
-                ...chartOptions,
-                scales: {
-                  r: {
-                    beginAtZero: true,
-                    max: 100,
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-      </div>
-
-      <div className="predictive-section">
-
-        <h3>🧠 AI Congestion Prediction</h3>
-
-        <div className="prediction-controls">
-
-          <button
-            onClick={() => fetchPredictions(1)}
-            disabled={loadingPredictions}
-          >
-            Predict 1 Hour
-          </button>
-
-          <button
-            onClick={() => fetchPredictions(3)}
-            disabled={loadingPredictions}
-          >
-            Predict 3 Hours
-          </button>
-
-          <button
-            onClick={() => fetchPredictions(6)}
-            disabled={loadingPredictions}
-          >
-            Predict 6 Hours
-          </button>
-
-        </div>
-
-        {loadingPredictions && (
-          <div className="loading-predictions">
-            <p>Running AI Prediction Model...</p>
-          </div>
-        )}
-
-        {predictions?.predictions && (
-          <div className="prediction-cards">
-
-            {predictions.predictions.map((pred, index) => (
-              <div
-                key={index}
-                className="prediction-card"
-              >
-
-                <h4>
-                  +{pred.hour} Hour
-                  {pred.hour > 1 ? "s" : ""}
-                </h4>
-
-                <p>
-                  Density:
-                  {" "}
-                  {pred.predicted_density?.toFixed(1)}%
-                </p>
-
-                <p>
-                  Confidence:
-                  {" "}
-                  {(pred.confidence * 100).toFixed(0)}%
-                </p>
-
+        <div className="an-card">
+          <div className="an-card-head"><h3>Key Metrics</h3><span className="an-tag">Summary</span></div>
+          <div className="metrics-list">
+            {metrics.map((m, i) => (
+              <div key={i} className="metric-row">
+                <span className="metric-lbl">{m.label}</span>
+                <span className="metric-val" style={{ color: m.color }}>{m.value}</span>
               </div>
             ))}
-
           </div>
-        )}
-
-      </div>
-
-      <div className="insights-section">
-
-        <h3>🚦 AI Insights</h3>
-
-        <div className="insights-grid">
-
-          <div className="insight-card">
-            <h4>Signal Optimization Active</h4>
-            <p>
-              AI reduced average waiting time by 18%.
-            </p>
-          </div>
-
-          <div className="insight-card">
-            <h4>Peak Hour Alert</h4>
-            <p>
-              Heavy traffic expected near Railway Junction.
-            </p>
-          </div>
-
-          <div className="insight-card">
-            <h4>Emergency Route Efficiency</h4>
-            <p>
-              Emergency corridor response improved significantly.
-            </p>
-          </div>
-
         </div>
 
+        <div className="an-card">
+          <div className="an-card-head">
+            <h3>AI Congestion Predictions</h3>
+            <div className="pred-btns">
+              {[1, 3, 6].map((h) => (
+                <button key={h} className="pred-btn" onClick={() => fetchPredictions(h)} disabled={loadingPred}>
+                  +{h}h
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="predictions-list">
+            {loadingPred ? <p className="loading-text">Running AI model...</p> :
+              Array.isArray(predictions) && predictions.length > 0 ? predictions.map((p, i) => {
+                const d = p.predicted_density || 0;
+                const color = d > 70 ? "#ef4444" : d > 50 ? "#f59e0b" : "#10b981";
+                return (
+                  <div key={i} className="pred-item">
+                    <span className="pred-slot">{p.time_slot || `Slot ${i + 1}`}</span>
+                    <div className="pred-track"><div className="pred-fill" style={{ width: `${d}%`, background: color }} /></div>
+                    <span className="pred-pct" style={{ color }}>{d}%</span>
+                  </div>
+                );
+              }) : <p className="loading-text">Click a button to predict</p>
+            }
+          </div>
+        </div>
       </div>
 
+      <div className="insights-row">
+        <h3 className="insights-title">🧠 AI Insights</h3>
+        <div className="insights-grid">
+          {insights.map((ins, i) => (
+            <div key={i} className="insight-card" style={{ borderTopColor: ins.color }}>
+              <span className="insight-icon">{ins.icon}</span>
+              <h4 className="insight-title">{ins.title}</h4>
+              <p className="insight-desc">{ins.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

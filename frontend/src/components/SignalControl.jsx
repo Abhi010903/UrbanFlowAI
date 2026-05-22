@@ -1,302 +1,137 @@
 import React, { useState, useEffect } from "react";
+import { FiRefreshCw, FiCheck, FiX, FiZap } from "react-icons/fi";
 import "./SignalControl.css";
+import { signalsAPI } from "../services/api";
 
 const SignalControl = () => {
   const [signals, setSignals] = useState([]);
-  const [selectedSignal, setSelectedSignal] = useState(null);
+  const [optimizing, setOptimizing] = useState(null);
   const [manualMode, setManualMode] = useState(false);
-  const [optimizationLog, setOptimizationLog] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [log, setLog] = useState([]);
 
   useEffect(() => {
-    fetchSignalData();
-
-    const interval = setInterval(() => {
-      fetchSignalData();
-    }, 3000);
-
-    return () => clearInterval(interval);
+    fetchSignals();
+    const iv = setInterval(fetchSignals, 5000);
+    return () => clearInterval(iv);
   }, []);
 
-  const fetchSignalData = async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:8000/api/signals/status"
-      );
-
-      const data = await response.json();
-
-      if (data?.status === "success" && Array.isArray(data.signals)) {
-        setSignals(data.signals);
-      }
-    } catch (error) {
-      console.error("Signal fetch error:", error);
-    } finally {
-      setLoading(false);
-    }
+  const fetchSignals = async () => {
+    try { const r = await signalsAPI.getStatus(); if (r.signals) setSignals(r.signals); } catch {}
   };
 
-  const addOptimizationLog = (message, type) => {
-    setOptimizationLog((prev) => [
-      {
-        id: Date.now(),
-        message,
-        type,
-        time: new Date().toLocaleTimeString(),
-      },
-      ...prev.slice(0, 9),
-    ]);
-  };
-
-  const handleOptimizeSignal = async (junctionId) => {
+  const handleOptimize = async (junctionId) => {
+    setOptimizing(junctionId);
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/signals/optimize?junction_id=${junctionId}`,
-        {
-          method: "POST",
-        }
-      );
-
-      const data = await response.json();
-
-      if (data?.status === "success") {
-        addOptimizationLog(
-          `Optimized junction ${junctionId}`,
-          "success"
-        );
-
-        fetchSignalData();
-      }
-    } catch (error) {
-      addOptimizationLog(
-        `Optimization failed for ${junctionId}`,
-        "error"
-      );
-    }
+      const r = await signalsAPI.optimize(junctionId);
+      addLog("success", `Signal optimized at ${junctionId}`);
+      if (r.success) fetchSignals();
+    } catch { addLog("error", `Failed to optimize ${junctionId}`); }
+    finally { setOptimizing(null); }
   };
 
   const handleOptimizeAll = async () => {
-    try {
-      for (const signal of signals) {
-        await handleOptimizeSignal(signal.junction_id);
-      }
-
-      addOptimizationLog(
-        "All signals optimized successfully",
-        "success"
-      );
-    } catch (error) {
-      addOptimizationLog(
-        "Bulk optimization failed",
-        "error"
-      );
-    }
+    for (const s of signals) await handleOptimize(s.junction_id);
+    addLog("success", "All signals optimized");
   };
 
-  const getSignalColor = (status) => {
-    switch (status) {
-      case "green":
-        return "#10b981";
-
-      case "yellow":
-        return "#f59e0b";
-
-      case "red":
-        return "#ef4444";
-
-      default:
-        return "#6b7280";
-    }
+  const addLog = (type, message) => {
+    setLog(prev => [{ id: Date.now(), type, message, time: new Date() }, ...prev.slice(0, 9)]);
   };
 
-  if (loading) {
-    return (
-      <div className="signal-loading">
-        <h2>Loading Signal Data...</h2>
-      </div>
-    );
-  }
+  const getPhaseColor = (status) => ({ green: "#10b981", yellow: "#f59e0b", red: "#ef4444" }[status?.toLowerCase()] || "#475569");
 
   return (
-    <div className="signal-control">
-
-      <div className="signal-control-header">
+    <div className="sc-page">
+      <div className="sc-header">
         <div>
-          <h1>🚦 UrbanFlowAI Signal Control</h1>
-          <p>Adaptive AI Traffic Signal Optimization System</p>
+          <h1 className="page-title">Signal Control</h1>
+          <p className="page-sub">Adaptive AI traffic signal optimization</p>
         </div>
-
-        <div className="signal-control-buttons">
-          <button
-            className="mode-btn"
-            onClick={() => setManualMode(!manualMode)}
-          >
-            {manualMode ? "🤖 Auto Mode" : "👤 Manual Mode"}
+        <div className="sc-actions">
+          <button className={`mode-btn ${manualMode ? "manual" : "auto"}`} onClick={() => setManualMode(!manualMode)}>
+            {manualMode ? "👤 Manual" : "🤖 Auto"}
           </button>
-
-          <button
-            className="optimize-all-btn"
-            disabled={manualMode}
-            onClick={handleOptimizeAll}
-          >
-            ⚡ Optimize All
+          <button className="btn-optimize-all" onClick={handleOptimizeAll} disabled={manualMode}>
+            <FiZap size={16} /> Optimize All
           </button>
         </div>
       </div>
 
-      <div className="signal-status-grid">
-
-        <div className="signal-status-card">
-          <h3>System Mode</h3>
-          <p className={manualMode ? "manual" : "auto"}>
-            {manualMode ? "MANUAL" : "AUTOMATIC"}
-          </p>
-        </div>
-
-        <div className="signal-status-card">
-          <h3>Total Signals</h3>
-          <p>{signals.length}</p>
-        </div>
-
-        <div className="signal-status-card">
-          <h3>Optimization</h3>
-          <p className="signal-active">ACTIVE</p>
-        </div>
-
-        <div className="signal-status-card">
-          <h3>Updated</h3>
-          <p>{new Date().toLocaleTimeString()}</p>
-        </div>
-
-      </div>
-
-      <div className="signals-grid">
-
-        {signals.map((signal) => (
-          <div
-            key={signal.junction_id}
-            className={`traffic-signal-card ${
-              selectedSignal?.junction_id === signal.junction_id
-                ? "signal-selected"
-                : ""
-            }`}
-            onClick={() => setSelectedSignal(signal)}
-          >
-
-            <div className="signal-card-header">
-              <h2>{signal.name}</h2>
-              <span>{signal.junction_id}</span>
-            </div>
-
-            <div className="signal-light-section">
-
-              <div
-                className="signal-light"
-                style={{
-                  background: getSignalColor(signal.status),
-                }}
-              />
-
-              <div>
-                <h3>{signal.phase_name}</h3>
-                <p>{signal.time_remaining}s remaining</p>
-              </div>
-
-            </div>
-
-            <div className="signal-metrics">
-
-              <div className="signal-metric-box">
-                <span>Phase</span>
-                <strong>
-                  {signal.current_phase}/4
-                </strong>
-              </div>
-
-              <div className="signal-metric-box">
-                <span>Status</span>
-                <strong>{signal.status}</strong>
-              </div>
-
-            </div>
-
-            <button
-              className="optimize-btn"
-              disabled={manualMode}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOptimizeSignal(signal.junction_id);
-              }}
-            >
-              Optimize Signal
-            </button>
-
+      <div className="sc-status-row">
+        {[
+          { label: "Mode", value: manualMode ? "MANUAL" : "AUTO", color: manualMode ? "#f59e0b" : "#10b981" },
+          { label: "Total Signals", value: signals.length, color: "#3b82f6" },
+          { label: "Optimization", value: "ACTIVE", color: "#10b981" },
+          { label: "Updated", value: new Date().toLocaleTimeString(), color: "#8b5cf6" },
+        ].map((s, i) => (
+          <div key={i} className="sc-stat">
+            <div className="sc-stat-val" style={{ color: s.color }}>{s.value}</div>
+            <div className="sc-stat-lbl">{s.label}</div>
           </div>
         ))}
-
       </div>
 
-      {selectedSignal && (
-        <div className="signal-details">
+      <div className="sc-body">
+        <div className="signals-grid">
+          {signals.length > 0 ? signals.map((sig) => (
+            <div key={sig.id || sig.junction_id} className="signal-card">
+              <div className="signal-card-top">
+                <div>
+                  <h3 className="signal-name">{sig.junction_id}</h3>
+                  <span className="signal-id">{sig.name || "Junction"}</span>
+                </div>
+                <div className="signal-light-wrap">
+                  <div className="signal-light" style={{ background: getPhaseColor(sig.status), boxShadow: `0 0 12px ${getPhaseColor(sig.status)}` }} />
+                </div>
+              </div>
 
-          <div className="signal-details-header">
-            <h2>{selectedSignal.name}</h2>
+              <div className="timing-row">
+                {[
+                  { label: "Green", val: `${sig.green_time || 30}s`, color: "#10b981" },
+                  { label: "Yellow", val: `${sig.yellow_time || 5}s`, color: "#f59e0b" },
+                  { label: "Red", val: `${sig.red_time || 30}s`, color: "#ef4444" },
+                ].map((t, i) => (
+                  <div key={i} className="timing-item">
+                    <span className="timing-val" style={{ color: t.color }}>{t.val}</span>
+                    <span className="timing-lbl">{t.label}</span>
+                  </div>
+                ))}
+              </div>
 
-            <button
-              className="signal-close-btn"
-              onClick={() => setSelectedSignal(null)}
-            >
-              ✕
-            </button>
-          </div>
+              <div className="signal-metrics">
+                <div className="sig-metric"><span>{sig.vehicle_count || 0}</span><span>Vehicles</span></div>
+                <div className="sig-metric"><span>{sig.density || 0}%</span><span>Density</span></div>
+              </div>
 
-          <div className="signal-details-grid">
-
-            <div className="signal-details-card">
-              <h3>Current Phase</h3>
-              <p>{selectedSignal.phase_name}</p>
+              <button
+                className="btn-optimize"
+                onClick={() => handleOptimize(sig.junction_id)}
+                disabled={manualMode || optimizing === sig.junction_id}
+              >
+                <FiRefreshCw size={14} className={optimizing === sig.junction_id ? "spin" : ""} />
+                {optimizing === sig.junction_id ? "Optimizing..." : "Optimize"}
+              </button>
             </div>
-
-            <div className="signal-details-card">
-              <h3>Status</h3>
-              <p>{selectedSignal.status}</p>
-            </div>
-
-            <div className="signal-details-card">
-              <h3>Time Remaining</h3>
-              <p>{selectedSignal.time_remaining}s</p>
-            </div>
-
-            <div className="signal-details-card">
-              <h3>Signal ID</h3>
-              <p>{selectedSignal.junction_id}</p>
-            </div>
-
-          </div>
-
+          )) : (
+            <div className="empty-state">No signal data available</div>
+          )}
         </div>
-      )}
 
-      <div className="optimization-log">
-
-        <h2>Optimization Logs</h2>
-
-        {optimizationLog.length === 0 ? (
-          <p>No optimization activity yet.</p>
-        ) : (
-          optimizationLog.map((log) => (
-            <div
-              key={log.id}
-              className={`log-item ${log.type}`}
-            >
-              <span>{log.time}</span>
-              <p>{log.message}</p>
-            </div>
-          ))
-        )}
-
+        <div className="log-panel">
+          <h3>Activity Log</h3>
+          <div className="log-list">
+            {log.length > 0 ? log.map((e) => (
+              <div key={e.id} className={`log-entry log-${e.type}`}>
+                <span className="log-icon">{e.type === "success" ? <FiCheck size={14} /> : <FiX size={14} />}</span>
+                <div className="log-body">
+                  <p className="log-msg">{e.message}</p>
+                  <p className="log-time">{e.time.toLocaleTimeString()}</p>
+                </div>
+              </div>
+            )) : <p className="empty-state">No activity yet</p>}
+          </div>
+        </div>
       </div>
-
     </div>
   );
 };

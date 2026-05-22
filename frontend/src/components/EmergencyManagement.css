@@ -1,0 +1,87 @@
+.em-page { width: 100%; }
+.page-title { font-size: 28px; font-weight: 800; background: linear-gradient(135deg,#f0f6ff 60%,#3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:4px; }
+.page-sub { font-size: 14px; color: #64748b; }
+
+.em-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.btn-new-corridor {
+  display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 10px;
+  background: linear-gradient(135deg,#dc2626,#b91c1c); color: #fff;
+  font-size: 14px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(239,68,68,0.3);
+}
+.btn-new-corridor:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239,68,68,0.4); }
+
+.em-stats-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 14px; margin-bottom: 24px; }
+.em-stat { background: rgba(15,25,55,0.7); border: 1px solid rgba(59,130,246,0.12); border-top: 3px solid; border-radius: 14px; padding: 16px 20px; backdrop-filter: blur(16px); }
+.em-stat-val { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+.em-stat-lbl { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.em-form-card { background: rgba(15,25,55,0.7); border: 1px solid rgba(239,68,68,0.2); border-radius: 16px; padding: 24px; margin-bottom: 24px; backdrop-filter: blur(16px); }
+.em-form-card h3 { font-size: 16px; font-weight: 700; color: #f0f6ff; margin-bottom: 20px; }
+.em-form { display: flex; flex-direction: column; gap: 16px; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-input, .form-select {
+  padding: 10px 14px; border-radius: 10px;
+  background: rgba(5,12,30,0.8); border: 1px solid rgba(59,130,246,0.15);
+  color: #f0f6ff; font-size: 14px; outline: none; transition: all 0.2s;
+}
+.form-input:focus, .form-select:focus { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.form-select option { background: #0a1228; }
+.form-actions { display: flex; gap: 12px; }
+.btn-activate {
+  flex: 1; padding: 12px; border-radius: 10px;
+  background: linear-gradient(135deg,#dc2626,#b91c1c); color: #fff;
+  font-size: 14px; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s;
+}
+.btn-activate:hover { transform: translateY(-1px); }
+.btn-cancel { padding: 12px 20px; border-radius: 10px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-cancel:hover { background: rgba(59,130,246,0.15); }
+
+.em-body { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+@media (max-width: 900px) { .em-body { grid-template-columns: 1fr; } .form-row-2 { grid-template-columns: 1fr; } }
+
+.section-title { font-size: 16px; font-weight: 700; color: #f0f6ff; margin-bottom: 16px; }
+.corridors-list { display: flex; flex-direction: column; gap: 14px; }
+
+.corridor-card {
+  background: rgba(15,25,55,0.7); border: 1px solid rgba(59,130,246,0.12);
+  border-radius: 16px; padding: 20px; backdrop-filter: blur(16px); transition: all 0.25s;
+}
+.corridor-card.active { border-color: rgba(239,68,68,0.2); }
+.corridor-card.paused { border-color: rgba(245,158,11,0.15); opacity: 0.8; }
+.corridor-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+
+.corridor-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.corridor-vehicle { display: flex; align-items: center; gap: 12px; }
+.vehicle-emoji { font-size: 28px; }
+.vehicle-type { font-size: 14px; font-weight: 700; color: #f0f6ff; margin-bottom: 2px; }
+.corridor-id { font-size: 11px; color: #475569; }
+
+.status-chip { padding: 4px 12px; border-radius: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; }
+.chip-active { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+.chip-paused { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+
+.corridor-coords { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.coord-item { display: flex; flex-direction: column; gap: 2px; }
+.coord-lbl { font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.4px; }
+.coord-val { font-size: 12px; color: #94a3b8; font-weight: 600; }
+.coord-val.eta { color: #10b981; font-size: 14px; font-weight: 800; }
+.coord-arrow { color: #475569; font-size: 18px; }
+
+.corridor-actions { display: flex; gap: 10px; }
+.btn-toggle { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; border-radius: 9px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); color: #60a5fa; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-toggle:hover { background: rgba(59,130,246,0.2); }
+.btn-remove { display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 9px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-remove:hover { background: rgba(239,68,68,0.15); }
+
+.history-panel { background: rgba(15,25,55,0.7); border: 1px solid rgba(59,130,246,0.12); border-radius: 16px; padding: 20px; backdrop-filter: blur(16px); }
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+.history-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(5,12,30,0.6); }
+.history-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.history-item.create .history-dot { background: #10b981; box-shadow: 0 0 6px #10b981; }
+.history-item.close .history-dot { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+.history-msg { font-size: 13px; color: #cbd5e1; margin-bottom: 2px; }
+.history-time { font-size: 11px; color: #475569; }
+.empty-state { text-align: center; padding: 32px; color: #475569; font-size: 13px; }

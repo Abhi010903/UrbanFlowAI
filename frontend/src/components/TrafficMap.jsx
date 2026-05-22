@@ -1,337 +1,121 @@
-import React, { useState, useEffect } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Circle
-} from "react-leaflet";
-
-import "leaflet/dist/leaflet.css";
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "./TrafficMap.css";
-
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { analyticsAPI } from "../services/api";
 
 delete L.Icon.Default.prototype._getIconUrl;
-
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const createCustomIcon = (congestionLevel) => {
-  const color =
-    congestionLevel > 70
-      ? "#ef4444"
-      : congestionLevel > 50
-      ? "#f59e0b"
-      : "#10b981";
-
-  return L.divIcon({
-    className: "custom-marker",
-    html: `
-      <div 
-        style="
-          background-color:${color};
-          width:30px;
-          height:30px;
-          border-radius:50%;
-          border:3px solid white;
-          box-shadow:0 2px 8px rgba(0,0,0,0.3);
-        "
-      ></div>
-    `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15]
-  });
+const densityColor = (d) => {
+  if (d > 80) return "#ef4444";
+  if (d > 60) return "#f59e0b";
+  if (d > 40) return "#06b6d4";
+  return "#10b981";
 };
 
-const TrafficMap = () => {
-  const [junctions, setJunctions] = useState([]);
-  const [heatmapData, setHeatmapData] = useState([]);
-  const [showHeatmap, setShowHeatmap] = useState(true);
-  const [selectedJunction, setSelectedJunction] = useState(null);
+const LEGEND = [
+  { color: "#10b981", label: "0–40% Low" },
+  { color: "#06b6d4", label: "40–60% Moderate" },
+  { color: "#f59e0b", label: "60–80% High" },
+  { color: "#ef4444", label: "80–100% Critical" },
+];
 
-  const mapCenter = [23.0225, 72.5714];
+const TrafficMap = () => {
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    fetchMapData();
-
-    const interval = setInterval(() => {
-      fetchMapData();
-    }, 5000);
-
-    return () => {
-      clearInterval(interval);
-    };
+    fetchData();
+    const iv = setInterval(fetchData, 10000);
+    return () => clearInterval(iv);
   }, []);
 
-  const fetchMapData = async () => {
+  const fetchData = async () => {
     try {
-      const trafficResponse = await fetch(
-        "http://localhost:8000/api/traffic/live-data"
-      );
-
-      const trafficData = await trafficResponse.json();
-
-      if (trafficData.status === "success") {
-        const formattedJunctions = trafficData.data.map((j) => ({
-          id: j.id,
-          name: j.name,
-          position: [j.latitude, j.longitude],
-          vehicleCount: j.vehicle_count || 0,
-          density: j.density_percentage || j.density || 0,
-          congestion: j.congestion_score || 0
-        }));
-
-        setJunctions(formattedJunctions);
-      }
-
-      const heatmapResponse = await fetch(
-        "http://localhost:8000/api/analytics/heatmap"
-      );
-
-      const heatmapJson = await heatmapResponse.json();
-
-      if (heatmapJson.status === "success") {
-        setHeatmapData(heatmapJson.heatmap || []);
-      }
-    } catch (error) {
-      console.error("Traffic map fetch error:", error);
-    }
-  };
-
-  const getCircleColor = (intensity) => {
-    if (intensity > 0.7) return "#ef4444";
-    if (intensity > 0.5) return "#f59e0b";
-    return "#10b981";
-  };
-
-  const handleJunctionClick = (junction) => {
-    setSelectedJunction(junction);
-  };
-
-  const handleOptimizeSignal = async (junctionId) => {
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/signals/optimize?junction_id=${junctionId}`,
-        {
-          method: "POST"
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.status === "success") {
-        fetchMapData();
-      }
-    } catch (error) {
-      console.error("Signal optimization error:", error);
-    }
+      const r = await analyticsAPI.getHeatmap();
+      if (r.heatmap) setHeatmapData(r.heatmap);
+    } catch {}
   };
 
   return (
-    <div className="traffic-map-container">
+    <div className="map-page">
       <div className="map-header">
-        <h2>Real-Time Traffic Map</h2>
-
-        <div className="map-controls">
-          <button
-            className={`control-btn ${showHeatmap ? "active" : ""}`}
-            onClick={() => setShowHeatmap(!showHeatmap)}
-          >
-            {showHeatmap ? "🔥 Hide Heatmap" : "🔥 Show Heatmap"}
-          </button>
-
-          <button className="control-btn" onClick={fetchMapData}>
-            🔄 Refresh
-          </button>
+        <div>
+          <h1 className="page-title">Traffic Map</h1>
+          <p className="page-sub">Real-time traffic density visualization across junctions</p>
         </div>
+        <button className="btn-refresh" onClick={fetchData}>↻ Refresh</button>
       </div>
 
-      <div className="map-legend">
-        <div className="legend-item">
-          <div
-            className="legend-color"
-            style={{ backgroundColor: "#10b981" }}
-          ></div>
-          <span>Low Congestion (&lt;50%)</span>
-        </div>
-
-        <div className="legend-item">
-          <div
-            className="legend-color"
-            style={{ backgroundColor: "#f59e0b" }}
-          ></div>
-          <span>Medium Congestion (50-70%)</span>
-        </div>
-
-        <div className="legend-item">
-          <div
-            className="legend-color"
-            style={{ backgroundColor: "#ef4444" }}
-          ></div>
-          <span>High Congestion (&gt;70%)</span>
-        </div>
-      </div>
-
-      <div className="map-wrapper">
-        <MapContainer
-          center={mapCenter}
-          zoom={13}
-          style={{ height: "600px", width: "100%" }}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; OpenStreetMap contributors'
-          />
-
-          {junctions.map((junction) => (
-            <Marker
-              key={junction.id}
-              position={junction.position}
-              icon={createCustomIcon(junction.density)}
-              eventHandlers={{
-                click: () => handleJunctionClick(junction)
-              }}
-            >
-              <Popup>
-                <div className="junction-popup">
-                  <h3>{junction.name}</h3>
-
-                  <div className="popup-stats">
-                    <p>
-                      <strong>Junction ID:</strong> {junction.id}
-                    </p>
-
-                    <p>
-                      <strong>Vehicles:</strong> {junction.vehicleCount}
-                    </p>
-
-                    <p>
-                      <strong>Density:</strong>{" "}
-                      {junction.density.toFixed(1)}%
-                    </p>
-
-                    <p>
-                      <strong>Congestion:</strong>{" "}
-                      {junction.congestion.toFixed(1)}/100
-                    </p>
+      <div className="map-layout">
+        <div className="map-wrap">
+          <MapContainer center={[19.076, 72.8777]} zoom={12} className="leaflet-map">
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+            />
+            {heatmapData.map((j, i) => (
+              <CircleMarker
+                key={i}
+                center={[j.lat, j.lng]}
+                radius={Math.min((j.density || 30) / 4, 28)}
+                fillColor={densityColor(j.density || 0)}
+                color={densityColor(j.density || 0)}
+                weight={2} opacity={0.9} fillOpacity={0.55}
+                eventHandlers={{ click: () => setSelected(j) }}
+              >
+                <Popup>
+                  <div className="map-popup">
+                    <strong>{j.junction || "Junction"}</strong>
+                    <p>Density: <span style={{ color: densityColor(j.density) }}>{j.density}%</span></p>
                   </div>
-
-                  <div className="density-bar">
-                    <div
-                      className="density-fill"
-                      style={{
-                        width: `${junction.density}%`,
-                        backgroundColor:
-                          junction.density > 70
-                            ? "#ef4444"
-                            : junction.density > 50
-                            ? "#f59e0b"
-                            : "#10b981"
-                      }}
-                    ></div>
-                  </div>
-
-                  <button
-                    className="optimize-btn"
-                    onClick={() => handleOptimizeSignal(junction.id)}
-                  >
-                    Optimize Signal
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-          {showHeatmap &&
-            heatmapData.map((point, index) => (
-              <Circle
-                key={index}
-                center={[point.lat, point.lng]}
-                radius={200}
-                pathOptions={{
-                  fillColor: getCircleColor(point.intensity),
-                  fillOpacity: point.intensity * 0.4,
-                  color: getCircleColor(point.intensity),
-                  weight: 2,
-                  opacity: 0.6
-                }}
-              />
+                </Popup>
+              </CircleMarker>
             ))}
-        </MapContainer>
-      </div>
+          </MapContainer>
 
-      {selectedJunction && (
-        <div className="junction-details-panel">
-          <button
-            className="map-close-btn"
-            onClick={() => setSelectedJunction(null)}
-          >
-            ×
-          </button>
-
-          <h3>{selectedJunction.name}</h3>
-
-          <div className="map-detail-grid">
-            <div className="map-detail-item">
-              <span className="map-detail-label">Junction ID</span>
-              <span className="map-detail-value">
-                {selectedJunction.id}
-              </span>
-            </div>
-
-            <div className="map-detail-item">
-              <span className="map-detail-label">Vehicle Count</span>
-              <span className="map-detail-value">
-                {selectedJunction.vehicleCount}
-              </span>
-            </div>
-
-            <div className="map-detail-item">
-              <span className="map-detail-label">Traffic Density</span>
-              <span className="map-detail-value">
-                {selectedJunction.density.toFixed(1)}%
-              </span>
-            </div>
-
-            <div className="map-detail-item">
-              <span className="map-detail-label">Congestion Score</span>
-              <span className="map-detail-value">
-                {selectedJunction.congestion.toFixed(1)}/100
-              </span>
-            </div>
-          </div>
-
-          <div className="signal-status">
-            <h4>Current Signal Status</h4>
-
-            <div className="signal-phases">
-              <div className="phase active">
-                <div className="phase-light green"></div>
-                <span>North-South: 45s</span>
+          <div className="map-legend">
+            <p className="legend-title">Traffic Density</p>
+            {LEGEND.map((l, i) => (
+              <div key={i} className="legend-row">
+                <span className="legend-dot" style={{ background: l.color, boxShadow: `0 0 6px ${l.color}` }} />
+                <span>{l.label}</span>
               </div>
-
-              <div className="phase">
-                <div className="phase-light red"></div>
-                <span>East-West: Wait</span>
-              </div>
-            </div>
+            ))}
           </div>
-
-          <button
-            className="action-btn primary"
-            onClick={() => handleOptimizeSignal(selectedJunction.id)}
-          >
-            Optimize This Signal
-          </button>
         </div>
-      )}
+
+        {selected && (
+          <div className="junction-panel">
+            <div className="jp-header">
+              <h3>{selected.junction || "Junction"}</h3>
+              <button className="jp-close" onClick={() => setSelected(null)}>✕</button>
+            </div>
+            <div className="jp-stats">
+              {[
+                { label: "Density", value: `${selected.density || 0}%`, color: densityColor(selected.density) },
+                { label: "Latitude", value: selected.lat?.toFixed(4), color: "#3b82f6" },
+                { label: "Longitude", value: selected.lng?.toFixed(4), color: "#8b5cf6" },
+              ].map((s, i) => (
+                <div key={i} className="jp-stat">
+                  <span className="jp-lbl">{s.label}</span>
+                  <span className="jp-val" style={{ color: s.color }}>{s.value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="density-bar-wrap">
+              <div className="density-bar-track">
+                <div className="density-bar-fill" style={{ width: `${selected.density || 0}%`, background: densityColor(selected.density) }} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
