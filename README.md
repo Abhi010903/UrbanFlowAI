@@ -405,5 +405,10 @@ UrbanFlowAI — Building intelligent and adaptive traffic ecosystems for future 
 
 ---
 
+## 👥 Contributors
+See [CONTRIBUTORS.md](./CONTRIBUTORS.md) for detailed team contributions.
+
+---
+
 Built with ❤️ for the future of intelligent urban mobility.
 Testing collaboration
