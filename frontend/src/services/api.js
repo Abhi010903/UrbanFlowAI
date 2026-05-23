@@ -1,87 +1,53 @@
-const API_BASE_URL = "http://127.0.0.1:8000";
+import axios from "axios";
 
-const apiClient = {
-  async get(endpoint) {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`);
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("API GET Error:", error);
-      throw error;
-    }
-  },
+const BASE = "http://127.0.0.1:8000";
+const api = axios.create({ baseURL: BASE, timeout: 30000 });
 
-  async post(endpoint, data) {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("API POST Error:", error);
-      throw error;
-    }
-  },
+const get  = (url, p) => api.get(url, { params: p }).then(r => r.data);
+const post = (url, d, cfg) => api.post(url, d, cfg).then(r => r.data);
+const patch = (url, d) => api.patch(url, d).then(r => r.data);
+const del  = (url) => api.delete(url).then(r => r.data);
 
-  async uploadFile(endpoint, file) {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("API Upload Error:", error);
-      throw error;
-    }
-  },
+export const healthAPI = {
+  check: () => get("/health"),
 };
 
 export const trafficAPI = {
-  getLiveTraffic: () => apiClient.get("/api/traffic/live"),
-  getLiveData: () => apiClient.get("/api/traffic/live-data"),
-  uploadVideo: (file) =>
-    apiClient.uploadFile("/api/traffic/upload-video", file),
-};
-
-export const analyticsAPI = {
-  getStatistics: () =>
-    apiClient.get("/api/analytics/statistics"),
-  getHeatmap: () => apiClient.get("/api/analytics/heatmap"),
-  getPredictions: () =>
-    apiClient.get("/api/analytics/predictions"),
+  getLiveTraffic:    () => get("/api/traffic/live"),
+  getLiveData:       () => get("/api/traffic/live-data"),
+  getLatestAnalysis: () => get("/api/traffic/latest-analysis"),
+  uploadVideo: (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return post("/api/traffic/upload-video", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export const signalsAPI = {
-  getStatus: () => apiClient.get("/api/signals/status"),
-  optimize: (junctionId) =>
-    apiClient.post("/api/signals/optimize", {
-      junction_id: junctionId,
-    }),
+  getStatus:   () => get("/api/signals/status"),
+  optimize:    (junctionId) => post(`/api/signals/optimize?junction_id=${junctionId}`),
+  optimizeAll: () => post("/api/signals/optimize-all"),
+};
+
+export const analyticsAPI = {
+  getStatistics:  () => get("/api/analytics/statistics"),
+  getHeatmap:     () => get("/api/analytics/heatmap"),
+  getPredictions: () => get("/api/analytics/predictions"),
+  getJunctions:   () => get("/api/analytics/junction-stats"),
 };
 
 export const incidentsAPI = {
-  report: (incident) =>
-    apiClient.post("/api/incidents/report", incident),
+  getAll:        () => get("/api/incidents"),
+  report:        (data) => post("/api/incidents/report", data),
+  updateStatus:  (id, status) => patch(`/api/incidents/${id}/status?status=${status}`),
+  delete:        (id) => del(`/api/incidents/${id}`),
 };
 
-export const healthAPI = {
-  check: () => apiClient.get("/health"),
+export const emergencyAPI = {
+  getCorridors:   () => get("/api/emergency/corridors"),
+  createCorridor: (data) => post("/api/emergency/create-corridor", data),
+  toggleCorridor: (id) => patch(`/api/emergency/corridors/${id}/toggle`),
+  deleteCorridor: (id) => del(`/api/emergency/corridors/${id}`),
 };
-
-export default apiClient;

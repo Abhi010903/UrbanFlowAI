@@ -83,4 +83,7 @@
 .log-icon { flex-shrink: 0; margin-top: 1px; }
 .log-msg { font-size: 13px; color: #cbd5e1; margin-bottom: 2px; }
 .log-time { font-size: 11px; color: #475569; }
-.empty-state { text-align: center; padding: 32px; color: #475569; font-size: 13px; }
+.countdown-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; margin:4px 0; }
+.countdown-ring { width:64px; height:64px; }
+.countdown-phase { font-size:11px; color:#64748b; text-align:center; }
+.signal-phase-label { font-size:10px; font-weight:800; letter-spacing:0.5px; margin-top:2px; display:block; text-align:center; }

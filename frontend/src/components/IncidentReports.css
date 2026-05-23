@@ -35,7 +35,15 @@
 .btn-submit-report:hover { transform: translateY(-1px); }
 .btn-cancel { padding: 11px 20px; border-radius: 10px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 
-.filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.ir-header-actions { display:flex; gap:10px; align-items:center; }
+.btn-refresh { padding:9px 12px; border-radius:10px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); color:#60a5fa; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; }
+.btn-refresh:hover { background:rgba(59,130,246,0.15); }
+.filter-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.btn-action-inc { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; border:1px solid; }
+.btn-action-inc.resolving { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.25); color:#f59e0b; }
+.btn-action-inc.resolving:hover { background:rgba(245,158,11,0.2); }
+.btn-action-inc.resolve { background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.25); color:#10b981; }
+.btn-action-inc.resolve:hover { background:rgba(16,185,129,0.2); }
 .filter-tab { padding: 8px 18px; border-radius: 10px; background: rgba(15,25,55,0.7); border: 1px solid rgba(59,130,246,0.12); color: #64748b; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .filter-tab.active { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.3); color: #60a5fa; }
 .filter-tab:hover:not(.active) { color: #94a3b8; }

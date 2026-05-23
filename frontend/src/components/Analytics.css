@@ -37,7 +37,28 @@
 .pred-track { flex: 1; height: 6px; background: rgba(59,130,246,0.1); border-radius: 3px; overflow: hidden; }
 .pred-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
 .pred-pct { font-size: 12px; font-weight: 700; width: 36px; text-align: right; }
-.loading-text { font-size: 13px; color: #475569; text-align: center; padding: 20px; }
+.an-loading { display:flex; align-items:center; justify-content:center; height:300px; color:#64748b; font-size:16px; }
+.an-kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:20px; }
+.an-kpi { background:rgba(15,25,55,0.7); border:1px solid rgba(59,130,246,0.12); border-top:3px solid; border-radius:14px; padding:14px 16px; backdrop-filter:blur(16px); }
+.an-kpi-val { font-size:22px; font-weight:800; margin-bottom:4px; }
+.an-kpi-lbl { font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+.an-right { display:flex; align-items:center; gap:12px; }
+.video-source-tag { font-size:12px; color:#3b82f6; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); padding:5px 12px; border-radius:10px; font-weight:700; }
+.vb-breakdown { display:flex; flex-direction:column; gap:10px; }
+.vb-row-an { display:flex; align-items:center; gap:10px; }
+.vb-lbl-an { width:52px; font-size:12px; font-weight:700; }
+.vb-track-an { flex:1; height:8px; background:rgba(59,130,246,0.1); border-radius:4px; overflow:hidden; }
+.vb-fill-an { height:100%; border-radius:4px; transition:width 0.6s ease; }
+.vb-count-an { width:36px; text-align:right; font-size:13px; font-weight:700; color:#f0f6ff; }
+.vb-pct-an { width:36px; text-align:right; font-size:12px; font-weight:700; }
+.junc-table-wrap { overflow-x:auto; }
+.junc-table { width:100%; border-collapse:collapse; font-size:13px; }
+.junc-table thead { background:rgba(59,130,246,0.05); }
+.junc-table th { padding:10px 14px; text-align:left; font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px; }
+.junc-table td { padding:10px 14px; border-bottom:1px solid rgba(59,130,246,0.05); color:#cbd5e1; }
+.junc-table tbody tr:hover { background:rgba(59,130,246,0.04); }
+.zone-tag { font-size:11px; color:#8b5cf6; background:rgba(139,92,246,0.1); padding:2px 8px; border-radius:6px; }
+.sig-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
 
 .insights-row { }
 .insights-title { font-size: 18px; font-weight: 700; color: #f0f6ff; margin-bottom: 16px; }
