@@ -62,8 +62,8 @@ export async function getRoute(from, to) {
   const route = data.routes[0];
   return {
     coordinates: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
-    distance: (route.distance / 1000).toFixed(1),   // km
-    duration: Math.round(route.duration / 60),        // minutes
+    distance: (route.distance / 1000).toFixed(1),
+    duration: Math.round(route.duration / 60),
     steps: route.legs[0]?.steps || [],
   };
 }
@@ -79,6 +79,67 @@ export function haversine(a, b) {
       Math.cos((b.lat * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+/**
+ * Calculate traffic level at any searched location.
+ * Finds nearest junction, weights density by distance.
+ * Returns { density, level, label, color, bg, border, nearestJunction, distance }
+ */
+export function getTrafficAtLocation(lat, lng, junctions) {
+  if (!junctions || junctions.length === 0) {
+    return {
+      density: 0, level: "NO_TRAFFIC", label: "No Traffic",
+      color: "#16a34a", bg: "#dcfce7", border: "#16a34a",
+      nearestJunction: null, distance: null,
+    };
+  }
+
+  // Find nearest junction
+  let nearest = null;
+  let minDist = Infinity;
+  for (const j of junctions) {
+    const d = haversine({ lat, lng }, { lat: j.lat, lng: j.lng });
+    if (d < minDist) { minDist = d; nearest = j; }
+  }
+
+  // Weight density by distance — beyond 3 km = no influence
+  const distanceFactor = Math.max(0, 1 - minDist / 3);
+  const density = Math.round((nearest?.density || 0) * distanceFactor);
+
+  if (density > 60) return {
+    density, level: "HEAVY", label: "Heavy Traffic",
+    color: "#dc2626", bg: "#fee2e2", border: "#dc2626",
+    nearestJunction: nearest, distance: minDist.toFixed(1),
+  };
+  if (density > 30) return {
+    density, level: "MODERATE", label: "Moderate Traffic",
+    color: "#d97706", bg: "#fef3c7", border: "#d97706",
+    nearestJunction: nearest, distance: minDist.toFixed(1),
+  };
+  return {
+    density, level: "NO_TRAFFIC", label: "No Traffic",
+    color: "#16a34a", bg: "#dcfce7", border: "#16a34a",
+    nearestJunction: nearest, distance: minDist.toFixed(1),
+  };
+}
+
+/** Build traffic-level colored pulsing pin */
+export function makeTrafficPin(L, trafficInfo, pulse = true) {
+  const color = trafficInfo?.color || "#1a73e8";
+  const ring = pulse
+    ? `<circle cx="22" cy="22" r="18" fill="none" stroke="${color}" stroke-width="2.5" opacity="0.5">
+        <animate attributeName="r" values="14;28;14" dur="1.8s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.6;0;0.6" dur="1.8s" repeatCount="indefinite"/>
+       </circle>`
+    : "";
+  const html = `<svg width="44" height="44" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+    ${ring}
+    <circle cx="22" cy="22" r="16" fill="white" opacity="0.95"/>
+    <circle cx="22" cy="22" r="12" fill="${color}"/>
+    <circle cx="22" cy="22" r="5"  fill="white"/>
+  </svg>`;
+  return L.divIcon({ html, className: "", iconSize: [44, 44], iconAnchor: [22, 22] });
 }
 
 /** Build SVG pin icon for Leaflet */

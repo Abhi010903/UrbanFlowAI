@@ -21,6 +21,7 @@ import EmergencyLayer  from "./map/EmergencyLayer";
 import {
   VADODARA, DEFAULT_ZOOM, TILE_LAYERS,
   ROAD_CONNECTIONS, densityColor, makePinIcon, makeLabelIcon,
+  getTrafficAtLocation, makeTrafficPin,
 } from "../map/mapUtils";
 
 /* ── fix Leaflet default icon ── */
@@ -32,15 +33,17 @@ L.Icon.Default.mergeOptions({
 });
 
 /* ── inner component: handles map events & imperative view changes ── */
-function MapController({ target, routeMode, onMapClick }) {
+function MapController({ target, routeMode, onMapClick, onFlyEnd }) {
   const map = useMap();
 
-  // fly to searched location
   useEffect(() => {
-    if (target) map.flyTo([target.lat, target.lng], target.zoom || 15, { duration: 1.4 });
-  }, [target, map]);
+    if (!target) return;
+    map.flyTo([target.lat, target.lng], target.zoom || 15, { duration: 1.4 });
+    // after fly animation ends, notify parent to open popup
+    const timer = setTimeout(() => { if (onFlyEnd) onFlyEnd(); }, 1600);
+    return () => clearTimeout(timer);
+  }, [target, map, onFlyEnd]);
 
-  // click handler for route mode
   useMapEvents({
     click(e) {
       if (routeMode) onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
@@ -64,10 +67,12 @@ export default function TrafficMap() {
   const [routeMode,   setRouteMode]   = useState(false);
   const [emergency,   setEmergency]   = useState(false);
   const [flyTarget,   setFlyTarget]   = useState(null);
-  const [searchMarker,setSearchMarker]= useState(null); // { lat, lng, name }
+  const [searchMarker,setSearchMarker]= useState(null); // { lat, lng, name, trafficInfo }
   const [liveLog,     setLiveLog]     = useState([]);
   const [pulseIdx,    setPulseIdx]    = useState(0);
   const [statsOpen,   setStatsOpen]   = useState(true);
+  const searchPopupRef = useRef(null);
+  const [popupOpen,   setPopupOpen]   = useState(false);
 
   // pulse animation
   useEffect(() => {
@@ -86,10 +91,25 @@ export default function TrafficMap() {
   const handleSearch = useCallback(async (queryOrSuggestion) => {
     const result = await search.searchPlace(queryOrSuggestion);
     if (!result) return;
-    setSearchMarker({ lat: result.lat, lng: result.lng, name: result.displayName.split(",")[0] });
+
+    // Calculate traffic level at searched location
+    const trafficInfo = getTrafficAtLocation(result.lat, result.lng, junctions);
+
+    const marker = {
+      lat: result.lat,
+      lng: result.lng,
+      name: result.displayName.split(",")[0],
+      fullName: result.displayName,
+      trafficInfo,
+    };
+
+    setSearchMarker(marker);
     setFlyTarget({ lat: result.lat, lng: result.lng, zoom: 15 });
-    addLog(`🔍 Navigated to ${result.displayName.split(",")[0]}`, "info");
-  }, [search, addLog]);
+    setPopupOpen(false); // reset, will re-open after fly
+
+    const logType = trafficInfo.level === "HEAVY" ? "warn" : "info";
+    addLog(`🔍 ${marker.name} — ${trafficInfo.label}`, logType);
+  }, [search, junctions, addLog]);
 
   /* ── route mode: collect two clicks ── */
   const routeClickCount = useRef(0);
@@ -160,6 +180,7 @@ export default function TrafficMap() {
             target={flyTarget}
             routeMode={routeMode}
             onMapClick={handleMapClick}
+            onFlyEnd={() => setPopupOpen(true)}
           />
 
           {/* animated flow dots */}
@@ -228,28 +249,88 @@ export default function TrafficMap() {
               icon={makeLabelIcon(L, "B", "#e74c3c")} />
           )}
 
-          {/* searched location marker */}
+          {/* searched location marker — traffic-colored popup */}
           {searchMarker && (
-            <Marker position={[searchMarker.lat, searchMarker.lng]}
-              icon={makePinIcon(L, "#1a73e8", true)}
+            <Marker
+              position={[searchMarker.lat, searchMarker.lng]}
+              icon={makeTrafficPin(L, searchMarker.trafficInfo || { color: "#1a73e8", level: "NO_TRAFFIC" })}
+              ref={(ref) => {
+                searchPopupRef.current = ref;
+                if (ref && popupOpen) {
+                  ref.openPopup();
+                }
+              }}
             >
-              <Popup className="tm-popup-wrap" closeButton={false}>
-                <div className="tm-popup">
-                  <div className="tm-popup-header" style={{ borderLeftColor: "#1a73e8" }}>
-                    <div className="tm-popup-name">{searchMarker.name}</div>
-                    <div className="tm-popup-zone">Searched Location</div>
-                  </div>
-                  <div className="tm-popup-body">
-                    <div className="tm-popup-row"><span>Lat</span><span style={{ fontWeight: 700 }}>{searchMarker.lat.toFixed(5)}</span></div>
-                    <div className="tm-popup-row"><span>Lng</span><span style={{ fontWeight: 700 }}>{searchMarker.lng.toFixed(5)}</span></div>
-                    <div className="tm-popup-row">
-                      <button className="tm-popup-route-btn"
-                        onClick={() => { routeHook.setOrigin({ ...searchMarker }); setRouteMode(true); routeClickCount.current = 1; addLog("📍 Origin set — click destination on map", "info"); }}>
-                        Route from here
-                      </button>
+              <Popup
+                className="tm-popup-wrap"
+                closeButton={false}
+                autoOpen={true}
+                autoPan={false}
+              >
+                {(() => {
+                  const t = searchMarker.trafficInfo || { level: "NO_TRAFFIC", label: "No Traffic", color: "#16a34a", bg: "#dcfce7", border: "#16a34a", density: 0 };
+                  const icons = { HEAVY: "🔴", MODERATE: "🟡", NO_TRAFFIC: "🟢" };
+                  const tips  = {
+                    HEAVY:      "Expect significant delays. Consider alternate routes.",
+                    MODERATE:   "Some congestion. Allow extra travel time.",
+                    NO_TRAFFIC: "Roads are clear. Good time to travel.",
+                  };
+                  return (
+                    <div className="tcp-wrap" style={{ "--tcp-color": t.color, "--tcp-bg": t.bg, "--tcp-border": t.border }}>
+                      {/* colored header band */}
+                      <div className="tcp-header" style={{ background: t.color }}>
+                        <span className="tcp-level-icon">{icons[t.level]}</span>
+                        <div className="tcp-header-text">
+                          <div className="tcp-level-label">{t.label}</div>
+                          <div className="tcp-location-name">{searchMarker.name}</div>
+                        </div>
+                      </div>
+
+                      {/* density bar */}
+                      <div className="tcp-body">
+                        <div className="tcp-density-row">
+                          <span className="tcp-density-lbl">Traffic Density</span>
+                          <span className="tcp-density-val" style={{ color: t.color }}>{t.density}%</span>
+                        </div>
+                        <div className="tcp-bar-bg">
+                          <div className="tcp-bar-fill" style={{ width: `${t.density}%`, background: t.color }} />
+                        </div>
+
+                        {/* tip */}
+                        <div className="tcp-tip" style={{ background: t.bg, borderColor: t.border }}>
+                          <span className="tcp-tip-icon">{icons[t.level]}</span>
+                          <span>{tips[t.level]}</span>
+                        </div>
+
+                        {/* nearest junction info */}
+                        {t.nearestJunction && (
+                          <div className="tcp-nearest">
+                            <span className="tcp-nearest-lbl">Nearest junction</span>
+                            <span className="tcp-nearest-val">{t.nearestJunction.name} ({t.distance} km)</span>
+                          </div>
+                        )}
+
+                        {/* coords */}
+                        <div className="tcp-coords">
+                          {searchMarker.lat.toFixed(5)}, {searchMarker.lng.toFixed(5)}
+                        </div>
+
+                        {/* route button */}
+                        <button
+                          className="tcp-route-btn"
+                          onClick={() => {
+                            routeHook.setOrigin({ ...searchMarker });
+                            setRouteMode(true);
+                            routeClickCount.current = 1;
+                            addLog("📍 Origin set — click destination on map", "info");
+                          }}
+                        >
+                          🗺 Get Route from here
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </Popup>
             </Marker>
           )}

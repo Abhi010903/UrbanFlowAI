@@ -363,3 +363,112 @@
   .tm-legend { display: none; }
   .tm-stats-bar { top: 60px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Traffic-colored search popup  (tcp = traffic colored popup)
+═══════════════════════════════════════════════════════════ */
+
+.tcp-wrap {
+  font-family: 'Inter', -apple-system, sans-serif;
+  min-width: 240px;
+  max-width: 280px;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* colored top band */
+.tcp-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  color: #fff;
+}
+.tcp-level-icon { font-size: 22px; flex-shrink: 0; }
+.tcp-header-text { display: flex; flex-direction: column; gap: 1px; }
+.tcp-level-label {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #fff;
+}
+.tcp-location-name {
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+/* body */
+.tcp-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+.tcp-density-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tcp-density-lbl { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.tcp-density-val { font-size: 18px; font-weight: 800; }
+
+.tcp-bar-bg {
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tcp-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+/* tip box */
+.tcp-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid;
+  font-size: 12px;
+  color: #374151;
+  line-height: 1.45;
+}
+.tcp-tip-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+/* nearest junction */
+.tcp-nearest {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px solid #f3f4f6;
+}
+.tcp-nearest-lbl { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.4px; }
+.tcp-nearest-val { font-size: 11px; font-weight: 700; color: #374151; text-align: right; max-width: 140px; }
+
+/* coords */
+.tcp-coords {
+  font-size: 10px;
+  color: #9ca3af;
+  text-align: center;
+  font-family: monospace;
+}
+
+/* route button */
+.tcp-route-btn {
+  width: 100%;
+  padding: 9px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tcp-route-btn:hover { background: #1557b0; }
